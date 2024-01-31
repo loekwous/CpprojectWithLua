@@ -1,0 +1,24 @@
+{
+  "name": "Ubuntu 22.04 for Lua",
+  "mounts": [
+    "source=${localEnv:HOME}/.ssh,target=/home/luauser/.ssh,type=bind"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cmake-tools",
+        "sumneko.lua"
+      ]
+    }
+  },
+  "runArgs": [
+    "--cap-add=SYS_PTRACE",
+    "--security-opt",
+    "seccomp=unconfined"
+  ],
+  "dockerFile": "Dockerfile",
+  "workspaceMount": "source=${localWorkspaceFolder},target=${localWorkspaceFolder},type=bind,consistency=delegated",
+  "workspaceFolder": "${localWorkspaceFolder}"
+  
+}
