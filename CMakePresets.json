@@ -2,8 +2,8 @@
     "version": 2,
     "configurePresets": [
         {
-            "name": "Debug",
-            "displayName": "Lua configure preset",
+            "name": "App",
+            "displayName": "CpprojectWithLua configure preset",
             "description": "Sets Ninja generator, build and install directory",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/build/${presetName}",
@@ -12,14 +12,41 @@
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/install/${presetName}",
                 "CMAKE_VERBOSE_MAKEFILE": "OFF"
             }
+        },
+        {
+            "name": "Test",
+            "displayName": "CpprojectWithLua test configure preset",
+            "description": "Sets Ninja generator, build and install directory",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/install/${presetName}",
+                "CMAKE_VERBOSE_MAKEFILE": "OFF",
+                "TEST": "ON"
+            }
         }
     ],
     "buildPresets": [
         {
             "name": "Debug",
             "description": "",
-            "displayName": "",
+            "displayName": "Debug application",
             "configurePreset": "Debug"
+        },
+        {
+            "name": "Debug test",
+            "description": "",
+            "displayName": "Debug test",
+            "configurePreset": "Debug"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "UnitTests",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "Test"
         }
     ]
 }
