@@ -14,16 +14,13 @@ get_lua_library(
 )
 
 
+add_subdirectory(src)
 
-if(NOT TEST)
-    message(STATUS "Configuring for application")
-    add_executable(CpprojectWithLua "main.c")
-    target_link_libraries(CpprojectWithLua LibLua)
-else()
+if(TEST)
     get_google_test()
     enable_testing()
+    add_subdirectory(tests)
 endif()
-add_subdirectory(tests)
 
 
 

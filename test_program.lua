@@ -16,7 +16,7 @@ function plot_buffer(buffer, width, height)
     for y = 1, height, 1 do
         for x = 1, width, 1 do
             if math.ceil(buffer[x] * height_threshold) == y then
-                io.write("j")
+                io.write("x")
             else
                 io.write(" ")
             end

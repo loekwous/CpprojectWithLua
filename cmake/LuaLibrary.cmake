@@ -23,7 +23,6 @@ ldblib.c
 ltm.c
 ltable.c
 lstate.c
-lua.c
 loadlib.c
 lcorolib.c
 lcode.c
@@ -31,7 +30,6 @@ lapi.c
 lgc.c
 lvm.c
 lfunc.c
-luac.c
 lauxlib.c
 ltablib.c
 linit.c
@@ -53,7 +51,7 @@ function(get_lua_library)
     if(NOT lua_arguments_HASH)
         message(STATUS "Downloading LUA version ${lua_arguments_LUA_VERSION} without HASH")
         FetchContent_Declare(
-            LuaLibDownload
+            lua-download
             PREFIX lib
             URL "${LUA_URL}${lua_arguments_LUA_VERSION}${LUA_URL_SUFFIX}"
             SOURCE_DIR ${lua_arguments_DOWNLOAD_DIR}
@@ -61,7 +59,7 @@ function(get_lua_library)
     else()
     message(STATUS "Downloading LUA version ${lua_arguments_LUA_VERSION} with sha256 HASH")
         FetchContent_Declare(
-            LuaLibDownload
+            lua-download
             PREFIX lib
             URL "${LUA_URL}${lua_arguments_LUA_VERSION}${LUA_URL_SUFFIX}"
             URL_HASH SHA256=${lua_arguments_HASH}
@@ -69,15 +67,15 @@ function(get_lua_library)
         )
     endif()
 
-    FetchContent_MakeAvailable(LuaLibDownload)
+    FetchContent_MakeAvailable(lua-download)
 
     set(LUA_LIB_SOURCE_DIR ${lua_arguments_DOWNLOAD_DIR}/src)
     list(TRANSFORM LUA_LIB_SOURCES PREPEND ${LUA_LIB_SOURCE_DIR}/)
 
-    add_library(LibLua STATIC ${LUA_LIB_SOURCES})
-    target_compile_options(LibLua PRIVATE -std=gnu99 -w)
-    target_include_directories(LibLua INTERFACE ${LUA_LIB_SOURCE_DIR})
-    target_link_libraries(LibLua m)
+    add_library(lua SHARED ${LUA_LIB_SOURCES})
+    target_compile_options(lua PRIVATE -std=gnu99 -w)
+    target_include_directories(lua INTERFACE ${LUA_LIB_SOURCE_DIR})
+    target_link_libraries(lua m)
 
 endfunction()
 

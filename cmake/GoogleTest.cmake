@@ -21,7 +21,7 @@ function(get_google_test)
 endfunction()
 
 macro(add_gtest_executable gtest_target_name)
-    set(positional_args SOURCES)
+    set(positional_args SOURCES DEPENDENCIES)
     cmake_parse_arguments(gtest_args "" "" "${positional_args}" ${ARGN})
 
     enable_testing()
@@ -35,6 +35,11 @@ macro(add_gtest_executable gtest_target_name)
     ${gtest_target_name}
     GTest::gtest_main
     )
+
+    if(gtest_args_DEPENDENCIES)
+        message(STATUS "For library ${gtest_target_name} adding dependencies: ${gtest_args_DEPENDENCIES}")
+        target_link_libraries(${gtest_target_name} ${gtest_args_DEPENDENCIES})
+    endif()
 
     include(GoogleTest)
     gtest_discover_tests(${gtest_target_name})
