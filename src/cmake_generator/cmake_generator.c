@@ -1,32 +1,10 @@
 #include "cmake_generator.h"
-#include "error_values.h"
 
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 
-#define N_TARGET_SLOTS 10
-
-static int name_is_valid_for_target(const char *name)
-{
-    const char forbidden_chars[] = " \t\n\r\f\v\\/";
-
-    if(name == NULL){
-        return RET_ERR_KEY;
-    }
-
-    if(strlen(name) == 0){
-        return RET_ERR_KEY;
-    }
-    
-    // check if the name contains any forbidden characters
-    for (size_t i = 0; i < sizeof(forbidden_chars); i++) {
-        if (strchr(name, forbidden_chars[i]) != NULL) {
-            return RET_ERR_KEY;
-        }
-    }
-
-    return RET_OK;
-}
+#include "cmake_document_engine.h"
 
 int CMAKE_GENERATOR_init(struct CMakeGenerator *generator)
 {
@@ -35,12 +13,13 @@ int CMAKE_GENERATOR_init(struct CMakeGenerator *generator)
         return RET_ERR_KEY;
     }
     generator->target_count = 0;
-    generator->targets = (struct CMakeTarget **)calloc(N_TARGET_SLOTS, sizeof(struct CMakeTarget *));
+    // Placeholder
+    generator->targets = (struct CMakeTarget **)calloc(0, sizeof(struct CMakeTarget *));
 
     return (generator->targets != NULL) ? RET_OK : RET_ERR_ALLOC;
 }
 
-int CMAKE_GENERATOR_close(struct CMakeGenerator *generator)
+int CMAKE_GENERATOR_destroy(struct CMakeGenerator *generator)
 {
     if (generator == NULL)
     {
@@ -56,14 +35,48 @@ int CMAKE_GENERATOR_close(struct CMakeGenerator *generator)
     return RET_OK;
 }
 
-int CMAKE_GENERATOR_generate(struct CMakeGenerator *generator)
+int CMAKE_GENERATOR_set_project_name(struct CMakeGenerator *generator, const char *project_name)
 {
-    return 0;
+    if (generator == NULL || project_name == NULL)
+    {
+        return RET_ERR_KEY;
+    }
+    generator->project_name = strdup(project_name);
+    return (generator->project_name != NULL) ? RET_OK : RET_ERR_ALLOC;
+}
+
+int CMAKE_GENERATOR_generate(struct CMakeGenerator *generator, char *const buffer, size_t buffer_size)
+{
+    if (generator == NULL || buffer == NULL || buffer_size == 0)
+    {
+        return 0;
+    }
+
+    char *practical_buffer = buffer;
+    char *buffer_end = buffer + buffer_size;
+
+    practical_buffer += CMAKE_DOCUMENT_ENGINE_get_cmake_required_version(practical_buffer, buffer_end - practical_buffer);
+    practical_buffer += CMAKE_DOCUMENT_ENGINE_get_project(generator, practical_buffer, buffer_end - practical_buffer);
+    for (size_t target_index = 0; target_index < generator->target_count; target_index++)
+    {
+        struct CMakeTarget *target = generator->targets[target_index];
+        practical_buffer += CMAKE_DOCUMENT_ENGINE_add_target(target, practical_buffer, buffer_end - practical_buffer);
+        practical_buffer += CMAKE_DOCUMENT_ENGINE_link_for_target(target, practical_buffer, buffer_end - practical_buffer);
+    }
+    return (practical_buffer - buffer) + 1;
+}
+
+int CMAKE_GENERATOR_set_version(struct CMakeGenerator *generator, size_t major_version, size_t minor_version, size_t patch_version)
+{
+    generator->major_version = major_version;
+    generator->minor_version = minor_version;
+    generator->patch_version = patch_version;
+    return RET_OK;
 }
 
 int CMAKE_GENERATOR_add_target(struct CMakeGenerator *generator, const char *target_name, enum CMakeTargetType type)
 {
-    if (generator == NULL || (name_is_valid_for_target(target_name) != RET_OK))
+    if ((generator == NULL) || (target_name == NULL))
     {
         return RET_ERR_KEY;
     }
@@ -73,26 +86,38 @@ int CMAKE_GENERATOR_add_target(struct CMakeGenerator *generator, const char *tar
         return RET_ERR_FAIL;
     }
 
-    if (generator->target_count == N_TARGET_SLOTS)
+    struct CMakeTarget *target = CMAKE_TARGET_create(target_name, type);
+
+    if (target == NULL)
     {
-        return RET_ERR_FAIL;
+        return CMAKE_TARGET_get_error();
     }
 
-    generator->targets[generator->target_count] = (struct CMakeTarget *)calloc(1, sizeof(struct CMakeTarget));
+    // Reallocate generator targets array
+    generator->targets = (struct CMakeTarget **)realloc(generator->targets, (generator->target_count + 1) * sizeof(struct CMakeTarget *));
 
-    if(generator->targets[generator->target_count] != NULL){
-        generator->targets[generator->target_count]->target_name = (char*)calloc(strlen(target_name) + 1, sizeof(char));
-        strncpy(generator->targets[generator->target_count]->target_name, target_name, strlen(target_name) + 1);
-        generator->targets[generator->target_count]->target_type = type;
-        generator->target_count++;
+    if (generator->targets == NULL)
+    {
+        return RET_ERR_ALLOC;
     }
 
-    return (generator->targets[generator->target_count] != NULL) ? RET_OK : RET_ERR_ALLOC;
+    generator->targets[generator->target_count] = target;
+    generator->target_count++;
+
+    return RET_OK;
 }
 
-int CMAKE_GENERATOR_add_target_dependency(struct CMakeGenerator *generator, const char *target_name, char *dependency_name)
+int CMAKE_GENERATOR_add_target_dependency(struct CMakeGenerator *generator, const char *target_name, const char *dependency_name)
 {
-    return 0;
+    if ((generator == NULL) || (target_name == NULL) || (dependency_name == NULL))
+    {
+        return RET_ERR_KEY;
+    }
+
+    struct CMakeTarget *target = CMAKE_GENERATOR_get_target(generator, target_name);
+    struct CMakeTarget *dependency = CMAKE_GENERATOR_get_target(generator, dependency_name);
+
+    return CMAKE_TARGET_add_dependency(target, dependency);
 }
 
 int CMAKE_GENERATOR_target_exists(struct CMakeGenerator *generator, const char *target_name)
@@ -109,5 +134,31 @@ int CMAKE_GENERATOR_target_exists(struct CMakeGenerator *generator, const char *
             return RET_OK;
         }
     }
-    return RET_ERR_FAIL;
+    return (CMAKE_GENERATOR_get_target(generator, target_name) == NULL) ? RET_ERR_FAIL : RET_OK;
+}
+
+struct CMakeTarget *CMAKE_GENERATOR_get_target(struct CMakeGenerator *generator, const char *target_name)
+{
+    if (generator == NULL || target_name == NULL)
+    {
+        return NULL;
+    }
+
+    if ((generator->target_count == 0) || generator->targets == NULL)
+    {
+        return NULL;
+    }
+
+    for (int i = 0; i < generator->target_count; i++)
+    {
+        if (generator->targets[i]->target_name == NULL)
+        {
+            continue;
+        }
+        if (strcmp(generator->targets[i]->target_name, target_name) == 0)
+        {
+            return generator->targets[i];
+        }
+    }
+    return NULL;
 }

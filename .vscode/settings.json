@@ -2,7 +2,12 @@
     "files.associations": {
         "cstdlib": "c",
         "malloc.h": "c",
-        "cctype": "c"
+        "cctype": "c",
+        "cmake_target.h": "c",
+        "cmake_document_engine.h": "c",
+        "error_values.h": "c",
+        "cmake_types.h": "c",
+        "functional": "c"
     },
     "Lua.diagnostics.globals": [
         "some_function"

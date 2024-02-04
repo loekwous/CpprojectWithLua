@@ -4,6 +4,9 @@ project(LuaApplication VERSION 0.1.0)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(CMAKE_CXX_STANDARD_REQUIRED 17)
+set(CMAKE_C_STANDARD_REQUIRED 11)
+
 include(cmake/LuaLibrary.cmake)
 include(cmake/GoogleTest.cmake)
 
@@ -13,6 +16,7 @@ get_lua_library(
     DOWNLOAD_DIR ${CMAKE_SOURCE_DIR}/LuaLibrary
 )
 
+set(CMAKE_CTEST_ARGUMENTS "--output-on-failure")
 
 add_subdirectory(src)
 

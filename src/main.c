@@ -10,6 +10,30 @@
 #include <stdlib.h>
 #include <malloc.h>
 
+#include <cmake_generator.h>
+
+void test_cmake_generator()
+{
+  struct CMakeGenerator generator;
+  CMAKE_GENERATOR_init(&generator);
+  CMAKE_GENERATOR_set_project_name(&generator, "test_project");
+  CMAKE_GENERATOR_set_version(&generator, 0, 1, 0);
+
+  CMAKE_GENERATOR_add_target(&generator, "test_target", Executable);
+  CMAKE_GENERATOR_add_target(&generator, "test_library", StaticLibrary);
+  CMAKE_GENERATOR_add_target(&generator, "test_sharedLibrary", SharedLibrary);
+
+  CMAKE_GENERATOR_add_target_dependency(&generator, "test_target", "test_library");
+  CMAKE_GENERATOR_add_target_dependency(&generator, "test_target", "test_sharedLibrary");
+
+  char dataBuffer[1024];
+
+  CMAKE_GENERATOR_generate(&generator, dataBuffer, 1024);
+
+  printf("%s\n", dataBuffer);
+
+  CMAKE_GENERATOR_destroy(&generator);
+}
 
 int some_function(lua_State *L)
 {
@@ -20,6 +44,8 @@ int some_function(lua_State *L)
 
 int main(int argc, char *argv[])
 {
+
+  test_cmake_generator();
 
   if (argc < 2)
   {
